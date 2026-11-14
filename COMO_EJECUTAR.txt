@@ -1,0 +1,57 @@
+================================================================================
+GUÍA RÁPIDA PARA EJECUTAR "EspecialistaEnDescanso.py" EN CUALQUIER COMPUTADORA
+Compatible con: Windows, Linux y macOS (Python 3.9 a 3.13)
+================================================================================
+
+¿QUÉ ARCHIVOS NECESITÁS PASARLE A TU AMIGO?
+--------------------------------------------------------------------------------
+Podés pasarle simplemente estos archivos:
+  1. EspecialistaEnDescanso.py
+  2. requirements.txt
+  3. alarma.wav (opcional: si no se lo pasás, el programa lo genera solo)
+  4. shape_predictor_68_face_landmarks.dat (opcional: pesa 96 MB; si no se lo
+     pasás para que el envío sea liviano, el programa lo descarga y descomprime
+     automáticamente la primera vez que se ejecuta).
+
+
+================================================================================
+OPCIÓN A: EN WINDOWS (PowerShell o CMD)
+================================================================================
+1. Abrir una terminal (PowerShell o CMD) dentro de la carpeta del proyecto.
+2. Crear y activar un entorno virtual (recomendado):
+   python -m venv .venv
+   .venv\Scripts\activate
+
+3. Instalar las librerías (usa dlib-bin precompilado, no requiere CMake ni C++):
+   pip install -r requirements.txt
+
+4. Ejecutar el programa:
+   python EspecialistaEnDescanso.py
+
+
+================================================================================
+OPCIÓN B: EN LINUX O macOS
+================================================================================
+1. Abrir una terminal dentro de la carpeta del proyecto.
+2. Crear y activar un entorno virtual:
+   python3 -m venv .venv
+   source .venv/bin/activate
+
+3. Instalar las librerías:
+   pip install -r requirements.txt
+
+4. Ejecutar el programa:
+   python3 EspecialistaEnDescanso.py
+
+
+================================================================================
+CONTROLES DENTRO DEL PROGRAMA
+================================================================================
+  * Al iniciar, mirá normalmente a la cámara durante 3 segundos para que el
+    sistema calibre tus umbrales según el tamaño de tus ojos y tu postura.
+  * Tecla 'c'       : Volver a calibrar (3 segundos).
+  * Tecla 'e'       : Activar / Desactivar corrección de iluminación (Gamma + CLAHE).
+  * Tecla 'f'       : Activar / Desactivar filtro de estabilidad temporal (EMA).
+  * Tecla 'q' o ESC : Salir del programa.
+================================================================================
+

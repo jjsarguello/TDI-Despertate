@@ -1,0 +1,9 @@
+# Ignorar el archivo pesado del modelo de dlib (96 MB) ya que EspecialistaEnDescanso.py lo descarga automáticamente
+*.dat
+*.bz2
+
+# Entornos virtuales y caché de Python
+.venv/
+venv/
+__pycache__/
+*.pyc

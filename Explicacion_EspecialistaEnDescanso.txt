@@ -1,0 +1,210 @@
+================================================================================
+UNRC - TRATAMIENTO DIGITAL DE IMÁGENES (TDI)
+TRABAJO FINAL - GRUPO 2: SISTEMA DE DETECCIÓN DE SOMNOLENCIA EN TIEMPO REAL
+Archivo documentado: EspecialistaEnDescanso.py
+Alumnos: Pérez Rossi, Tomás | Argüello, Juan Salvador
+================================================================================
+
+1. OBJETIVO GENERAL DEL SISTEMA
+--------------------------------------------------------------------------------
+El script "EspecialistaEnDescanso.py" implementa un sistema de visión artificial
+y procesamiento digital de video en tiempo real que estima el nivel de alerta,
+fatiga acumulada y somnolencia de un usuario (conductor u operador) frente a una
+cámara web frontal (resolución estandarizada a 640x480 píxeles).
+
+El sistema combina lo mejor de los enfoques de referencia (clasificación en
+múltiples estados de alerta, extracción de 68 landmarks faciales de dlib y
+alertas multihilo) e incorpora mejoras propias de Tratamiento Digital de Imágenes
+(TDI) y métricas estándar de la industria automotriz (PERCLOS, MAR, postura 3D
+proyectiva y calibración biométrica adaptativa).
+
+
+2. ESTRUCTURA DEL CÓDIGO: QUÉ HACE CADA PARTE Y SU UTILIDAD
+--------------------------------------------------------------------------------
+
+A) PREPROCESAMIENTO DE IMAGEN (TDI): preprocess_gray_clahe()
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     1. Convierte cada fotograma de BGR a escala de grises.
+     2. Mide la iluminación (luminancia) EXCLUSIVAMENTE dentro del recuadro del
+        rostro detectado (last_face_box), ignorando si el fondo es muy oscuro o
+        muy claro.
+     3. Calcula una luminancia de referencia combinando el 40% del brillo medio
+        y el 60% del percentil 75 (p75). Usar el percentil 75 permite detectar
+        cuando un foco de luz o ventana "quema" la mitad de la cara.
+     4. Aplica una Transformación de Ley de Potencia (Corrección Gamma Adaptativa:
+        s = 255 * (r/255)^gamma) mediante una tabla de búsqueda (cv2.LUT) junto
+        con compresión de altas luces:
+        - Si da MUCHA LUZ en la cara (sobreexposición), calcula automáticamente
+          un gamma > 1.0 (hasta 3.0), oscureciendo los blancos saturados y
+          recuperando el borde de los párpados y pestañas.
+        - Si hay POCA LUZ (subexposición), calcula un gamma < 1.0 para aclarar
+          las sombras.
+     5. Finalmente aplica CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        en bloques de 8x8 con clipLimit=1.5 para mejorar el contraste local sin
+        amplificar el ruido.
+
+   * ¿Cuál es su utilidad?
+     En entornos reales de conducción u operación, la luz cambia constantemente.
+     Sin este bloque, el exceso de luz directa borra los contornos de los ojos y
+     las sombras laterales hacen fallar al detector facial. Además, su efecto se
+     visualiza en vivo en la ventana secundaria ("Result of detector").
+
+
+B) SELECCIÓN DE ÚNICO USUARIO PRINCIPAL (FILTRADO DE ROSTRO)
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Cuando el detector HOG de dlib (detector(gray, 0)) encuentra más de un
+     rostro en el cuadro, el sistema selecciona únicamente el recuadro de mayor
+     área ((x2 - x1) * (y2 - y1)).
+
+   * ¿Cuál es su utilidad?
+     Garantiza que el sistema monitoree exclusivamente al conductor/operador que
+     está en primer plano frente a la cámara, ignorando pasajeros traseros o
+     personas que pasen caminando por detrás para que no alteren las métricas ni
+     los contadores.
+
+
+C) APERTURA OCULAR: eye_aspect_ratio() (MÉTRICA EAR)
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Calcula la relación geométrica entre las dos distancias verticales del ojo
+     (||p2 - p6|| y ||p3 - p5||) y el doble de la distancia horizontal entre las
+     comisuras palpebrales (||p1 - p4||):
+         EAR = (||p2 - p6|| + ||p3 - p5||) / (2 * ||p1 - p4||)
+     Se calcula sobre los landmarks 36-41 (ojo derecho) y 42-47 (ojo izquierdo).
+
+   * ¿Cuál es su utilidad?
+     Es una métrica invariante a la escala (distancia a la cámara): cuando el
+     ojo está abierto tiene un valor alto (~0.26 a 0.35) y cuando se cierra cae
+     cerca de ~0.12 a 0.18.
+
+
+D) DETECCIÓN DE BOSTEZOS: mouth_aspect_ratio() (MÉTRICA MAR)
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Utiliza los 8 landmarks del labio interno (inner_mouth, puntos 60 a 67 de
+     dlib). Promedia las 3 alturas verticales internas de la boca y las divide
+     por el ancho horizontal entre las comisuras internas:
+         MAR = (||p61-p67|| + ||p62-p66|| + ||p63-p65||) / (3 * ||p60-p64||)
+
+   * ¿Cuál es su utilidad?
+     Permite detectar bostezos (síntoma temprano clave de somnolencia) de forma
+     puramente geométrica y liviana, sin necesitar redes neuronales pesadas (.h5).
+     Al exigir que MAR > 0.50 se mantenga durante 15 frames consecutivos
+     (yawn_consec_frames), distingue perfectamente entre hablar normal y bostezar,
+     incrementando el contador de "Bostezos" y disparando una alerta.
+
+
+E) POSTURA CEFÁLICA EN 3 EJES Y COMPENSACIÓN DE GIRO:
+   compute_head_pose_metrics() y compute_perspective_compensated_ear()
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     1. Roll (Inclinación lateral en grados): calcula el ángulo de la línea que
+        une el centro de ambos ojos. Si supera ±16°, detecta que la cabeza cayó
+        hacia un hombro.
+     2. Pitch (Cabeceo vertical): calcula la razón proyectiva entre el largo del
+        puente nasal (entrecejo p27 a punta de nariz p30) y la distancia nariz-
+        mentón (p30 a p8). Al cabecear hacia adelante/abajo, la distancia nariz-
+        mentón se acorta en la proyección 2D de la cámara y el ratio sube,
+        disparando la alerta de cabeceo y sumando al contador "Cabeceos".
+     3. Yaw (Giro lateral del cuello): compara el ancho visible izquierdo vs.
+        derecho del rostro desde la nariz (p30) hacia los bordes de la mandíbula
+        (p0 y p16).
+     4. Compensación de EAR por perspectiva (compute_perspective_compensated_ear):
+        Cuando el usuario gira la cabeza hacia un costado (|Yaw| > 0.18), el ojo
+        más alejado se achica por perspectiva (escorzo), mientras que el ojo
+        expuesto hacia la cámara se ve claramente. El sistema le asigna 85% de
+        peso al ojo expuesto a la cámara (pintándolo en verde brillante) y 15%
+        al ojo en escorzo (pintándolo en gris).
+
+   * ¿Cuál es su utilidad?
+     Resuelve un problema clásico de conducción real:
+     - Si el conductor gira la cabeza con los ojos abiertos (ej. para cobrar un
+       pasaje o mirar un espejo), NO dispara falsos positivos por culpa del ojo
+       que quedó de perfil.
+     - Pero si el conductor se queda dormido con el cuello girado hacia un
+       costado, el ojo visible hacia la cámara también se cierra y el sistema
+       DETECTA el sueño sin fallar.
+
+
+F) FILTRO PASA-BAJOS TEMPORAL (EMA): ema_filter()
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Aplica una Media Móvil Exponencial:
+         x_suave(t) = alpha * x(t) + (1 - alpha) * x_suave(t - 1)
+     - Para el contador de parpadeos rápidos usa SIEMPRE el EAR instantáneo sin
+       filtrar (ear_raw), ya que un parpadeo dura apenas 2 a 3 frames.
+     - Para el estado de fatiga/sueño usa un suavizado ligero (alpha = 0.60).
+     - Para boca (MAR) y cabeza (Pitch, Roll, Yaw) usa un suavizado firme
+       (alpha = 0.35).
+     - Se puede activar o desactivar en vivo con la tecla 'f'.
+
+   * ¿Cuál es su utilidad?
+     Elimina el temblor (jitter) de 1 o 2 píxeles propio de los landmarks de
+     dlib, evitando que un único frame ruidoso reinicie a 0 los contadores de
+     sueño o cabeceo. Al poder apagarse con la tecla 'f', permite elegir en vivo
+     entre máxima estabilidad (EMA ON) o cero latencia (EMA OFF).
+
+
+G) CALIBRACIÓN AUTOMÁTICA INICIAL (3 SEGUNDOS) Y CONTADOR DE PARPADEOS
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     - Durante los primeros 3 segundos en los que detecta al usuario (o al tocar
+       la tecla 'c'), mide la mediana de apertura ocular normal (EAR_base) y la
+       postura frontal (Pitch_base).
+     - Fija automáticamente los umbrales analíticos personalizados:
+         * Umbral Activo (ear_active_thresh) = 82% de EAR_base
+         * Umbral Ojo Cerrado (ear_sleep_thresh) = 70% de EAR_base
+         * Umbral de Cabeceo (pitch_nod_thresh) = 125% de Pitch_base
+     - Además, cada vez que el ojo se cierra por >= 2 frames y vuelve a abrirse,
+       incrementa el contador de "Parpadeos".
+
+   * ¿Cuál es su utilidad?
+     No todas las personas tienen el mismo tamaño de ojos ni colocan la cámara a
+     la misma altura. La calibración adapta los umbrales analíticos a la
+     fisonomía del usuario en 3 segundos.
+
+
+H) MÉTRICA TEMPORAL ESTÁNDAR PERCLOS: update_perclos() Y ESTADOS DE ALERTA
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Mantiene una ventana temporal móvil de los últimos 30 segundos (configurable
+     con --perclos-window) mediante una cola (collections.deque) con marcas de
+     tiempo reales (timestamps). Calcula el porcentaje de frames dentro de esa
+     ventana en los que el ojo estuvo cerrado (EAR <= ear_sleep_thresh):
+         PERCLOS (%) = (Frames cerrados en ventana / Total frames en ventana) * 100
+
+   * ¿Cuál es su utilidad?
+     Cumple con el estándar exigido en la consigna:
+     - El contador de frames consecutivos detecta un MICROSUEÑO (cerrar los ojos
+       de corrido por ~1 segundo).
+     - PERCLOS detecta la FATIGA ACUMULADA (cuando la persona todavía no se
+       duerme de corrido, pero parpadea lento, pesado y muy seguido):
+         * PERCLOS < 15% y ojos abiertos  -> Estado: "Activo :)" (Verde)
+         * 15% <= PERCLOS < 25% o entrecerrado -> Estado: "Somnoliento (Fatiga) !" (Naranja)
+         * PERCLOS >= 25% o cierre continuo    -> Estado: "DURMIENDO / SOMNOLENCIA!" (Rojo + Alarma)
+
+
+I) ALARMA SONORA MULTIHILO: sound_alarm() y ensure_alarm_wav()
+   -----------------------------------------------------------------------------
+   * ¿Qué hace?
+     Reproduce el archivo "alarma.wav" en un hilo secundario (daemon thread)
+     protegido por un candado (ALARM_LOCK) usando reproductores nativos de Linux
+     (pw-play / aplay) o playsound. Si el archivo "alarma.wav" no existiera en
+     otra PC, lo sintetiza automáticamente en formato WAV de 16 bits.
+
+   * ¿Cuál es su utilidad?
+     Emite la alerta acústica inmediata ante microsueño, PERCLOS crítico, bostezo
+     o cabeceo sin congelar los FPS del procesamiento de video ni superponer
+     múltiples audios a la vez.
+
+
+3. RESUMEN DE CONTROLES INTERACTIVOS EN TIEMPO REAL
+--------------------------------------------------------------------------------
+  * Tecla 'c'       : Inicia o repite la Calibración Personalizada de 3 segundos.
+  * Tecla 'e'       : Activa / Desactiva el preprocesamiento Gamma + CLAHE (luz).
+  * Tecla 'f'       : Activa / Desactiva el Filtro Temporal EMA (estabilidad vs. sensibilidad).
+  * Tecla 'q' o ESC : Cierra el programa de forma segura.
+================================================================================
+
