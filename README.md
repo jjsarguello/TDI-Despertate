@@ -1,18 +1,62 @@
-# Driver-Drowsiness-Detection
-Driver drowsiness detection is a project built using Dlib and OpenCV with Python as a backend language.
-<h3>Logic of project</h3>
-The project includes direct working with the 68 facial landmark detector and also the face detector of the Dlib library.
-The 68 facial landmark detector is a robustly trained efficient detector which detects the points on the human face using which 
-we determine whether the eyes are open or they are closed.</br></br>
-<center><img src="https://raw.githubusercontent.com/infoaryan/Driver-Drowsiness-Detection/master/screenshots/landmarks.jpg" align="center" height="350"></center>
-<b>The 68-landmark detector data (.dat) file can be found <a href="http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2"> By clicking here</a></B>
+# Sistema de Detección de Somnolencia en Tiempo Real (`EspecialistaEnDescanso.py`)
 
-<h3>The working of the project</h3>
-<ul><li>As you can see the<b> above screenshot</b> where the landmarks aredetected using the detector.
-<li>Now we are taking the ratio which is described as <i>'Sum of distances of vertical landmarks divided by twice the distance between horizontal landmarks'</i>.
-<li>Now this ratio is totally dependent on your system which you may configure accordingly for the thresholds of sleeping, drowsy, active.</ul>
-<p><img src="https://raw.githubusercontent.com/infoaryan/Driver-Drowsiness-Detection/master/screenshots/active.jpg" align="center" height="350">
-<img src="https://raw.githubusercontent.com/infoaryan/Driver-Drowsiness-Detection/master/screenshots/drowsy.jpg" align="center" height="350">
-<img src="https://raw.githubusercontent.com/infoaryan/Driver-Drowsiness-Detection/master/screenshots/sleepy.jpg" align="center" height="350">
+**UNRC – Tratamiento Digital de Imágenes (TDI)**  
+**Grupo 2:** Pérez Rossi, Tomás | Argüello, Juan Salvador
 
-<h2>Detailed Explanation video of the project : </h2><a href="https://youtu.be/ksi42rwGyas">Youtube video link</a>
+Compatible con **Windows, Linux y macOS** (Python 3.9 a 3.13).
+
+---
+
+## ¿Qué archivos incluye el proyecto?
+- **`EspecialistaEnDescanso.py`**: Sistema principal de detección de somnolencia y fatiga (EAR, MAR, PERCLOS, postura cefálica Pitch/Roll/Yaw, preprocesamiento Gamma+CLAHE, filtro temporal EMA y calibración automática).
+- **`requirements.txt`**: Dependencias del proyecto.
+- **`alarma.wav`**: Archivo de alerta sonora (si no se encuentra, el programa lo sintetiza automáticamente).
+- **`shape_predictor_68_face_landmarks.dat`**: Modelo de 68 landmarks de `dlib` (pesa ~96 MB; **el programa lo descarga y descomprime automáticamente** la primera vez que se ejecuta si no está en la carpeta).
+- **`Explicacion_EspecialistaEnDescanso.txt`**: Documentación detallada de cada módulo, fórmula y su utilidad en TDI.
+
+---
+
+## Cómo ejecutar el programa en cualquier computadora
+
+### Opción A: En Windows (PowerShell o CMD)
+1. Abrir una terminal (**PowerShell** o **CMD**) dentro de la carpeta del proyecto.
+2. Crear y activar un entorno virtual (recomendado):
+   ```powershell
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+3. Instalar las librerías (usa `dlib-bin` precompilado, no requiere instalar CMake ni C++):
+   ```powershell
+   pip install -r requirements.txt
+   ```
+4. Ejecutar el programa:
+   ```powershell
+   python EspecialistaEnDescanso.py
+   ```
+
+---
+
+### Opción B: En Linux o macOS
+1. Abrir una terminal dentro de la carpeta del proyecto.
+2. Crear y activar un entorno virtual:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Instalar las librerías:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Ejecutar el programa:
+   ```bash
+   python3 EspecialistaEnDescanso.py
+   ```
+
+---
+
+## Controles interactivos dentro del programa
+- **Calibración inicial automática:** Al iniciar, mirá normalmente a la cámara durante **3 segundos** para que el sistema calibre los umbrales según el tamaño de tus ojos y tu postura.
+- **Tecla `c`**: Volver a calibrar los umbrales (3 segundos).
+- **Tecla `e`**: Activar / Desactivar la corrección de iluminación en el rostro (**Gamma Adaptativo + CLAHE**).
+- **Tecla `f`**: Activar / Desactivar el filtro de estabilidad temporal (**EMA**).
+- **Tecla `q` o `ESC`**: Salir del programa.
