@@ -16,6 +16,32 @@ Compatible con **Windows, Linux y macOS** (Python 3.9 a 3.13).
 
 ---
 
+## Descarga rápida de los archivos (`curl` / `git clone`)
+
+### 1. Descargar los archivos necesarios con un solo comando `curl`
+Si el repositorio es público (o querés bajar directamente los archivos principales y el modelo de `dlib` en una carpeta nueva):
+
+```bash
+mkdir -p EspecialistaEnDescanso && cd EspecialistaEnDescanso && \
+curl -LO https://raw.githubusercontent.com/jjsarguello/TDI-Sistema-de-Detecci-n-de-Somnolencia-Drowsiness-detection-/main/EspecialistaEnDescanso.py && \
+curl -LO https://raw.githubusercontent.com/jjsarguello/TDI-Sistema-de-Detecci-n-de-Somnolencia-Drowsiness-detection-/main/requirements.txt && \
+curl -LO https://raw.githubusercontent.com/jjsarguello/TDI-Sistema-de-Detecci-n-de-Somnolencia-Drowsiness-detection-/main/alarma.wav
+```
+
+*(Opcional)* Si también querés bajar manualmente el modelo de 68 landmarks (`shape_predictor_68_face_landmarks.dat`) con `curl` antes de iniciar (recordá que si no lo bajás a mano, `EspecialistaEnDescanso.py` lo descarga y descomprime solo):
+
+```bash
+curl -L https://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 -o shape_predictor_68_face_landmarks.dat.bz2 && bzip2 -d shape_predictor_68_face_landmarks.dat.bz2
+```
+
+### 2. O clonar el repositorio completo con `git clone`
+```bash
+git clone https://github.com/jjsarguello/TDI-Sistema-de-Detecci-n-de-Somnolencia-Drowsiness-detection-.git
+cd TDI-Sistema-de-Detecci-n-de-Somnolencia-Drowsiness-detection-
+```
+
+---
+
 ## Cómo ejecutar el programa en cualquier computadora
 
 ### Opción A: En Windows (PowerShell o CMD)
@@ -60,3 +86,4 @@ Compatible con **Windows, Linux y macOS** (Python 3.9 a 3.13).
 - **Tecla `e`**: Activar / Desactivar la corrección de iluminación en el rostro (**Gamma Adaptativo + CLAHE**).
 - **Tecla `f`**: Activar / Desactivar el filtro de estabilidad temporal (**EMA**).
 - **Tecla `q` o `ESC`**: Salir del programa.
+
