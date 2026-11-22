@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <com.example.despertate.OverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Estado + barra de calibración (arriba) -->
+    <LinearLayout
+        android:id="@+id/panelTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#66000000"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Iniciando..."
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/progressCalib"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:max="100" />
+    </LinearLayout>
+
+    <!-- Métricas (abajo a la izquierda) -->
+    <TextView
+        android:id="@+id/tvMetrics"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="8dp"
+        android:background="#88000000"
+        android:fontFamily="monospace"
+        android:padding="8dp"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+
+    <!-- Botones (abajo a la derecha); con scroll por si en horizontal no entran todos -->
+    <ScrollView
+        android:id="@+id/panelButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="8dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btnRecalibrar"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recalibrar" />
+
+            <Button
+                android:id="@+id/btnEma"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EMA: ON" />
+
+            <Button
+                android:id="@+id/btnClahe"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CLAHE: OFF" />
+
+            <Button
+                android:id="@+id/btnLentes"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lentes: AUTO" />
+
+            <Button
+                android:id="@+id/btnDatos"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Datos: SI" />
+
+            <Button
+                android:id="@+id/btnPip"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Segundo plano" />
+
+            <Button
+                android:id="@+id/btnProbarAlarma"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Probar alarma" />
+
+            <Button
+                android:id="@+id/btnDetener"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Detener" />
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
