@@ -109,13 +109,15 @@ Al empezar, la barra de arriba dice **CALIBRANDO** con un porcentaje. Mirá de f
 | **Lentes: AUTO/ON/OFF** | Detección de anteojos de sol. AUTO la hace sola; ON y OFF la fuerzan |
 | **Datos: SI/NO** | Muestra u oculta el panel de métricas |
 | **Segundo plano** | Pasa a una ventanita flotante para usar otras apps (por ejemplo Google Maps) |
+| **Medir: OFF/…** | Modo de medición para calibrar: cada toque cambia la situación (NORMAL, HABLAR, BOSTEZO, OJOS CERRADOS, ENTRECERRADOS). Mientras no esté en OFF registra EAR y MAR |
+| **Resumen medición** | Muestra los percentiles de EAR (relativo a tu base) y MAR por situación y la racha más larga sobre/bajo el umbral. **Reiniciar** borra los datos |
 | **Probar alarma** | Suena la alarma 3 segundos, para chequear el volumen |
 | **Detener** | Apaga cámara, detección y alarma |
 
 ### Lista de pruebas sugeridas
 1. **Ojos cerrados:** cerrá los ojos 2 segundos. Debe pasar a PELIGRO y sonar la alarma. Al abrirlos se apaga.
 2. **Cabeceo:** bajá la cabeza como si te durmieras. Debe saltar la alarma.
-3. **Bostezo:** abrí bien la boca un par de segundos. Cuenta un bostezo y marca fatiga, pero no suena la alarma.
+3. **Bostezo:** abrí bien la boca 2 o 3 segundos. Cuenta un bostezo y marca fatiga. La boca abierta sola no hace sonar la alarma, pero si al bostezar cerrás los ojos más de 1,15 s, suena igual (es el mismo criterio que ojos cerrados).
 4. **Parpadeo normal:** mirá al frente 30 segundos. No debe haber falsas alarmas.
 5. **Anteojos de sol:** con **Lentes: AUTO**, ponete anteojos oscuros. Debe decir "[Lentes de Sol]" y los ojos se dibujan en violeta. Al sacártelos vuelve a la normalidad.
 6. **Mala luz:** probá con luz fuerte de costado y comparalo con **CLAHE** prendido y apagado.

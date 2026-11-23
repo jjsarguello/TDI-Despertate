@@ -26,7 +26,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AlertDialog
+import com.example.despertate.core.DetectorConfig
 import com.example.despertate.core.DriverState
+import com.example.despertate.core.MeasureStats
 import com.example.despertate.core.SunglassesMode
 import java.util.Locale
 
@@ -48,9 +51,17 @@ class MainActivity : AppCompatActivity(), DetectionService.UiListener {
     private lateinit var btnDetener: Button
     private lateinit var btnLentes: Button
     private lateinit var btnProbarAlarma: Button
+    private lateinit var btnMedir: Button
+    private lateinit var btnResumen: Button
     private lateinit var panelButtons: View
     private var inPip = false
     private var showMetrics = true
+
+    // Modo medición: registra EAR/MAR por situación para ajustar umbrales en este celular.
+    private val measureLabels = listOf("OFF", "NORMAL", "HABLAR", "BOSTEZO", "OJOS CERRADOS", "ENTRECERRADOS")
+    private var measureIdx = 0
+    private val measureCfg = DetectorConfig()
+    private val measure = MeasureStats(measureCfg.bostezoMarUmbral, measureCfg.earFactorCerrado)
 
     private var service: DetectionService? = null
     private var bound = false
@@ -129,6 +140,8 @@ class MainActivity : AppCompatActivity(), DetectionService.UiListener {
         btnLentes = findViewById(R.id.btnLentes)
         panelButtons = findViewById(R.id.panelButtons)
         btnProbarAlarma = findViewById(R.id.btnProbarAlarma)
+        btnMedir = findViewById(R.id.btnMedir)
+        btnResumen = findViewById(R.id.btnResumen)
 
         btnRecalibrar.setOnClickListener { service?.recalibrate() }
         btnEma.setOnClickListener {
@@ -160,6 +173,13 @@ class MainActivity : AppCompatActivity(), DetectionService.UiListener {
         // Picture-in-Picture: al salir de la app queda una ventana flotante con el estado.
         setPictureInPictureParams(pipParams())
         btnPip.setOnClickListener { enterPip() }
+
+        btnMedir.setOnClickListener {
+            measureIdx = (measureIdx + 1) % measureLabels.size
+            measure.breakRuns()
+            btnMedir.text = "Medir: ${measureLabels[measureIdx]}"
+        }
+        btnResumen.setOnClickListener { showMeasureSummary() }
 
         btnProbarAlarma.setOnClickListener {
             val msg = service?.testAlarm(3000) ?: "Servicio todavía no listo"
@@ -258,6 +278,15 @@ class MainActivity : AppCompatActivity(), DetectionService.UiListener {
         tvStatus.textSize = if (inPip) 12f else 20f
     }
 
+    private fun showMeasureSummary() {
+        AlertDialog.Builder(this)
+            .setTitle("Medición (EAR relativo a tu base)")
+            .setMessage(measure.summary())
+            .setPositiveButton("Cerrar", null)
+            .setNegativeButton("Reiniciar") { _, _ -> measure.reset() }
+            .show()
+    }
+
     private fun updateTdiButtons() {
         val s = service
         btnClahe.text = if (s?.claheEnabled == true) "CLAHE: ON" else "CLAHE: OFF"
@@ -311,6 +340,11 @@ class MainActivity : AppCompatActivity(), DetectionService.UiListener {
         val mouthColor = if (out.yawning) orange else Color.rgb(0, 120, 255)
         val eyeColor = if (out.sunglasses) Color.rgb(180, 100, 220) else Color.GREEN
         overlay.update(u.frame, u.face, u.width, u.height, eyeColor, mouthColor, axisColor)
+
+        if (measureIdx != 0 && !out.calibrating && out.state != DriverState.SIN_ROSTRO) {
+            val base = out.earSleepThresh / measureCfg.earFactorCerrado
+            if (base > 0.0) measure.add(measureLabels[measureIdx], nowMs / 1000.0, out.ear / base, out.mar)
+        }
 
         if (inPip) return
         val h = service?.helper

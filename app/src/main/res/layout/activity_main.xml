@@ -114,6 +114,20 @@
                 android:text="Probar alarma" />
 
             <Button
+                android:id="@+id/btnMedir"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Medir: OFF" />
+
+            <Button
+                android:id="@+id/btnResumen"
+                style="@style/PanelButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Resumen medición" />
+
+            <Button
                 android:id="@+id/btnDetener"
                 style="@style/PanelButton"
                 android:layout_width="match_parent"
